@@ -6,3 +6,11 @@
 	<pthread.h>
 	<unistd.h>
 
+1506463726 source:c:\users\nsopko\coding\dcas\main.cpp
+	<iostream>
+	<stdio.h>
+	<stdlib.h>
+	<pthread.h>
+	<unistd.h>
+	<windows.h>
+
