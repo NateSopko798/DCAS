@@ -5,8 +5,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <windows.h>
-#define row 10
-#define col 10
+#define row 20
+#define col 20
 #define NUM_THREADS    20
 #define MAX_STOPS 5
 using namespace std;
@@ -16,7 +16,7 @@ int threadCount;
 pthread_t threads[NUM_THREADS];
 pthread_mutex_t printLock;
 pthread_mutex_t countLock;
-pthread_mutex_t mapLocks[row *col];
+pthread_mutex_t mapLocks[row][col];
 
 struct drone_data
 {
@@ -45,8 +45,8 @@ struct drone_data drone_data_array[NUM_THREADS];
 void makeMove(void *drone_data){
     struct drone_data * my_data = (struct drone_data *) drone_data;
     while(my_data->currentx != my_data->stopx || my_data->currenty != my_data->stopy){ //while both locations are not at the stop
-        int i = 0;
-        //--------------------------------------------------------------------------------XXXXXXXXX
+        //int i = 0;
+        //------------------------------------------------------------------------------XXXXXXXXX
         if(abs((my_data->currentx + 1) - my_data->stopx) < abs((my_data->currentx - 1) - my_data->stopx)){//if +1 is better than -1
              if(abs((my_data->currentx + 1) - my_data->stopx) != abs((my_data->currentx - 1) - my_data->stopx)){//they arent equal
                 pthread_mutex_lock (&printLock);
@@ -55,7 +55,6 @@ void makeMove(void *drone_data){
                 my_data->currentx = my_data->currentx +1;
                 pthread_mutex_unlock (&printLock);
              }
-
         }
         else{//if -1 is better than +1
             if(abs((my_data->currentx + 1) - my_data->stopx) != abs((my_data->currentx - 1) - my_data->stopx)){//they arent equal
@@ -100,9 +99,11 @@ void printWorld(){
 }
 
 void destroyLocks(){
-    int maxi = row * col;
-    for (int i = 0; i < maxi; i++){
-        pthread_mutex_destroy(&mapLocks[i]);
+    int i,j;
+    for (i = 0; i < row; i++) {
+        for (j = 0; j < col; j++) {
+            pthread_mutex_destroy(&mapLocks[i][j]);
+        }
     }
 }
 
@@ -141,9 +142,11 @@ void setupWorld(int rows, int columns){
 }
 
 void setupLocks(){
-    int maxi = row * col;
-    for (int i = 0; i < maxi; i++){
-        pthread_mutex_init(&mapLocks[i], NULL);
+    int i,j;
+    for (i = 0; i < row; i++) {
+        for (j = 0; j < col; j++) {
+            pthread_mutex_init(&mapLocks[i][j],NULL);
+        }
     }
 }
 
