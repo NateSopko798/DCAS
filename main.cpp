@@ -7,7 +7,7 @@
 #include <windows.h>
 #define row 20
 #define col 20
-#define NUM_THREADS    1
+#define NUM_THREADS    9
 #define MAX_STOPS 5
 using namespace std;
 
@@ -45,97 +45,80 @@ struct drone_data drone_data_array[NUM_THREADS];
 void makeMove(void *drone_data){
     struct drone_data * my_data = (struct drone_data *) drone_data;
     while(my_data->currentx != my_data->stopx || my_data->currenty != my_data->stopy){ //while both locations are not at the stop
-        //------------------------------------------------------------------------------XXXXXXXXX
         if(abs((my_data->currentx + 1) - my_data->stopx) < abs((my_data->currentx - 1) - my_data->stopx)){
                 //x needs a plus 1 (+1, x )
             if((abs((my_data->currenty + 1) - my_data->stopy) < abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a plus 1 (+1,+1)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty+1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currentx = my_data->currentx +1;
                 my_data->currenty = my_data->currenty +1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
             else if((abs((my_data->currenty + 1) - my_data->stopy) == abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a 0 (+1,0)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty)][(my_data->currentx+1)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currentx = my_data->currentx +1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
             else{
                 //y needs -1 (+1,-1
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty-1)][(my_data->currentx+1)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty-1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currentx = my_data->currentx +1;
                 my_data->currenty = my_data->currenty -1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
         }
         else if(abs((my_data->currentx + 1) - my_data->stopx) > abs((my_data->currentx - 1) - my_data->stopx)){
             //x needs a minus 1 (-1,x)
             if((abs((my_data->currenty + 1) - my_data->stopy) < abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a plus 1 (-1,+1)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx-1)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty+1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currentx = my_data->currentx -1;
                 my_data->currenty = my_data->currenty +1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
             else if((abs((my_data->currenty + 1) - my_data->stopy) == abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a 0 (-1,0)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty)][(my_data->currentx-1)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currentx = my_data->currentx -1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
             else{
                 //y needs -1 (-1,-1)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty-1)][(my_data->currentx-1)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty-1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currentx = my_data->currentx -1;
                 my_data->currenty = my_data->currenty -1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
         }
         else{
             if((abs((my_data->currenty + 1) - my_data->stopy) < abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a plus 1 (0,+1)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty+1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currenty = my_data->currenty +1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
             else{
                 //y needs -1 (0,-1)
-                pthread_mutex_lock (&printLock);
-                //this lock will eventually turn into the lock in the position that we want to jump to.
+                pthread_mutex_lock (&mapLocks[(my_data->currenty-1)][(my_data->currentx)]);
                 grid[my_data->currenty][my_data->currentx] = '.';
                 grid[(my_data->currenty-1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
+                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
                 my_data->currenty = my_data->currenty -1;
-                pthread_mutex_unlock (&printLock);
-                //this lock will eventually turn into the lock in the current position we are in
             }
         }
         updateWorld();
@@ -163,9 +146,10 @@ void destroyLocks(){
 
 void *startFlight(void *drone_data){
   struct drone_data * my_data = (struct drone_data *) drone_data;
-  pthread_mutex_lock (&printLock);
+  //pthread_mutex_lock (&printLock);
+  pthread_mutex_lock (&mapLocks[my_data->currenty][my_data->currentx]);
   grid[my_data->currenty][my_data->currentx] = ((char)'0' + my_data->thread_id);
-  pthread_mutex_unlock (&printLock);
+  //pthread_mutex_unlock (&printLock);
   updateWorld();
   makeMove(drone_data);
   pthread_mutex_lock (&countLock);
@@ -179,8 +163,10 @@ void *startFlight(void *drone_data){
   }
   else{
     //it isnt the last thread
+    pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
     pthread_mutex_unlock (&countLock);
   }
+
   pthread_exit((void*) 0);
 }
 
