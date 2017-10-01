@@ -7,7 +7,7 @@
 #include <windows.h>
 #define row 20
 #define col 20
-#define NUM_THREADS    9
+#define NUM_THREADS    2
 #define MAX_STOPS 5
 using namespace std;
 
@@ -42,6 +42,70 @@ void updateWorld(){
 
 struct drone_data drone_data_array[NUM_THREADS];
 
+void customLock(void *drone_data, int tryx,int tryy){
+    //method to check how long it has taken to try to get a lock
+    //if longer than 3 seconds we can assume it has been in a deadlock scenario
+    struct drone_data * my_data = (struct drone_data *) drone_data;
+    int trys = 0;
+    int i = 3;
+    while( i > 0){
+        if(pthread_mutex_trylock(&mapLocks[tryy][tryx])!= 0){
+            trys++;
+        }
+        else{
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[tryy][tryx] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = tryx;
+            my_data->currenty = tryy;
+            break;
+        }
+        Sleep(1000);
+    }
+    if(trys>3){
+        if(pthread_mutex_trylock(&mapLocks[tryy+1][tryx+1]) == 0){
+            //(+1,+1)
+            /*
+            pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]);
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty+1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx +1;
+            my_data->currenty = my_data->currenty +1;
+            */
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy-1][tryx]) == 0){
+            //(0,-1)
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy][tryx+1]) == 0){
+            //(+1,0)
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy-1][tryx+1]) == 0){
+            //(+1,-1)
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy-1][tryx-1]) == 0){
+            //(-1,-1)
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy+1][tryx-1]) == 0){
+            //(-1,+1)
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy][tryx-1]) == 0){
+            //(-1,0)
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[tryy+1][tryx]) == 0){
+            //(0,+1)
+            return;
+        }
+    }
+}
+
 void makeMove(void *drone_data){
     struct drone_data * my_data = (struct drone_data *) drone_data;
     while(my_data->currentx != my_data->stopx || my_data->currenty != my_data->stopy){ //while both locations are not at the stop
@@ -49,76 +113,56 @@ void makeMove(void *drone_data){
                 //x needs a plus 1 (+1, x )
             if((abs((my_data->currenty + 1) - my_data->stopy) < abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a plus 1 (+1,+1)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty+1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currentx = my_data->currentx +1;
-                my_data->currenty = my_data->currenty +1;
+                int tryx = my_data->currentx+1;
+                int tryy = my_data->currenty+1;
+                customLock(drone_data,tryx,tryy);
             }
             else if((abs((my_data->currenty + 1) - my_data->stopy) == abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a 0 (+1,0)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty)][(my_data->currentx+1)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currentx = my_data->currentx +1;
+                int tryx = my_data->currentx+1;
+                int tryy = my_data->currenty;
+                customLock(drone_data,tryx,tryy);
             }
             else{
-                //y needs -1 (+1,-1
-                pthread_mutex_lock (&mapLocks[(my_data->currenty-1)][(my_data->currentx+1)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty-1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currentx = my_data->currentx +1;
-                my_data->currenty = my_data->currenty -1;
+                //y needs -1 (+1,-1)
+                int tryx = my_data->currentx+1;
+                int tryy = my_data->currenty-1;
+                customLock(drone_data,tryx,tryy);
             }
         }
         else if(abs((my_data->currentx + 1) - my_data->stopx) > abs((my_data->currentx - 1) - my_data->stopx)){
             //x needs a minus 1 (-1,x)
             if((abs((my_data->currenty + 1) - my_data->stopy) < abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a plus 1 (-1,+1)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx-1)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty+1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currentx = my_data->currentx -1;
-                my_data->currenty = my_data->currenty +1;
+                int tryx = my_data->currentx-1;
+                int tryy = my_data->currenty+1;
+                customLock(drone_data,tryx,tryy);
             }
             else if((abs((my_data->currenty + 1) - my_data->stopy) == abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a 0 (-1,0)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty)][(my_data->currentx-1)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currentx = my_data->currentx -1;
+                int tryx = my_data->currentx-1;
+                int tryy = my_data->currenty;
+                customLock(drone_data,tryx,tryy);
             }
             else{
                 //y needs -1 (-1,-1)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty-1)][(my_data->currentx-1)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty-1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currentx = my_data->currentx -1;
-                my_data->currenty = my_data->currenty -1;
+                int tryx = my_data->currentx-1;
+                int tryy = my_data->currenty-1;
+                customLock(drone_data,tryx,tryy);
             }
         }
         else{
             if((abs((my_data->currenty + 1) - my_data->stopy) < abs((my_data->currenty - 1) - my_data->stopy))){
                 //y needs a plus 1 (0,+1)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty+1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currenty = my_data->currenty +1;
+                int tryx = my_data->currentx;
+                int tryy = my_data->currenty+1;
+                customLock(drone_data,tryx,tryy);
             }
             else{
                 //y needs -1 (0,-1)
-                pthread_mutex_lock (&mapLocks[(my_data->currenty-1)][(my_data->currentx)]);
-                grid[my_data->currenty][my_data->currentx] = '.';
-                grid[(my_data->currenty-1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
-                pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-                my_data->currenty = my_data->currenty -1;
+                int tryx = my_data->currentx;
+                int tryy = my_data->currenty-1;
+                customLock(drone_data,tryx,tryy);
             }
         }
         updateWorld();
@@ -146,10 +190,10 @@ void destroyLocks(){
 
 void *startFlight(void *drone_data){
   struct drone_data * my_data = (struct drone_data *) drone_data;
-  //pthread_mutex_lock (&printLock);
-  pthread_mutex_lock (&mapLocks[my_data->currenty][my_data->currentx]);
+  while(pthread_mutex_trylock(&mapLocks[my_data->currenty][my_data->currentx]) != 0){
+    Sleep(1000);
+  }
   grid[my_data->currenty][my_data->currentx] = ((char)'0' + my_data->thread_id);
-  //pthread_mutex_unlock (&printLock);
   updateWorld();
   makeMove(drone_data);
   pthread_mutex_lock (&countLock);
