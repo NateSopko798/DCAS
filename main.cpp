@@ -62,45 +62,74 @@ void customLock(void *drone_data, int tryx,int tryy){
         }
         Sleep(1000);
     }
-    if(trys>3){
-        if(pthread_mutex_trylock(&mapLocks[tryy+1][tryx+1]) == 0){
+    if(trys==3){
+        //no more logic, just find a move that can be made
+        if(pthread_mutex_trylock((&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]) == 0)){
             //(+1,+1)
-            /*
-            pthread_mutex_lock (&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]);
             grid[my_data->currenty][my_data->currentx] = '.';
             grid[(my_data->currenty+1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
             pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
             my_data->currentx = my_data->currentx +1;
             my_data->currenty = my_data->currenty +1;
-            */
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy-1][tryx]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[my_data->currenty-1][my_data->currentx]) == 0){
             //(0,-1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty-1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currenty = my_data->currenty -1;
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy][tryx+1]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty)][(my_data->currentx+1)]) == 0){
             //(+1,0)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx +1;
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy-1][tryx+1]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty-1)][(my_data->currentx+1)]) == 0){
             //(+1,-1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty-1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx +1;
+            my_data->currenty = my_data->currenty -1;
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy-1][tryx-1]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty-1)][(my_data->currentx-1)]) == 0){
             //(-1,-1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty-1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx -1;
+            my_data->currenty = my_data->currenty -1;
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy+1][tryx-1]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty+1)][(my_data->currentx-1)]) == 0){
             //(-1,+1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty+1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx -1;
+            my_data->currenty = my_data->currenty +1;
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy][tryx-1]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty)][(my_data->currentx-1)]) == 0){
             //(-1,0)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx -1;
             return;
         }
-        if(pthread_mutex_trylock(&mapLocks[tryy+1][tryx]) == 0){
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty+1)][(my_data->currentx)]) == 0){
             //(0,+1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty+1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currenty = my_data->currenty +1;
             return;
         }
     }
