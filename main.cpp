@@ -7,7 +7,7 @@
 #include <windows.h>
 #define row 20
 #define col 20
-#define NUM_THREADS    2
+#define NUM_THREADS    40
 #define MAX_STOPS 5
 using namespace std;
 
@@ -61,18 +61,10 @@ void customLock(void *drone_data, int tryx,int tryy){
             break;
         }
         Sleep(1000);
+        i--;
     }
     if(trys==3){
         //no more logic, just find a move that can be made
-        if(pthread_mutex_trylock((&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]) == 0)){
-            //(+1,+1)
-            grid[my_data->currenty][my_data->currentx] = '.';
-            grid[(my_data->currenty+1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
-            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-            my_data->currentx = my_data->currentx +1;
-            my_data->currenty = my_data->currenty +1;
-            return;
-        }
         if(pthread_mutex_trylock(&mapLocks[my_data->currenty-1][my_data->currentx]) == 0){
             //(0,-1)
             grid[my_data->currenty][my_data->currentx] = '.';
@@ -87,6 +79,31 @@ void customLock(void *drone_data, int tryx,int tryy){
             grid[(my_data->currenty)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
             pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
             my_data->currentx = my_data->currentx +1;
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty)][(my_data->currentx-1)]) == 0){
+            //(-1,0)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx -1;
+            return;
+        }
+        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty+1)][(my_data->currentx)]) == 0){
+            //(0,+1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty+1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currenty = my_data->currenty +1;
+            return;
+        }
+        if(pthread_mutex_trylock((&mapLocks[(my_data->currenty+1)][(my_data->currentx+1)]) == 0)){
+            //(+1,+1)
+            grid[my_data->currenty][my_data->currentx] = '.';
+            grid[(my_data->currenty+1)][(my_data->currentx+1)] = ((char)'0' + my_data->thread_id);
+            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
+            my_data->currentx = my_data->currentx +1;
+            my_data->currenty = my_data->currenty +1;
             return;
         }
         if(pthread_mutex_trylock(&mapLocks[(my_data->currenty-1)][(my_data->currentx+1)]) == 0){
@@ -113,22 +130,6 @@ void customLock(void *drone_data, int tryx,int tryy){
             grid[(my_data->currenty+1)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
             pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
             my_data->currentx = my_data->currentx -1;
-            my_data->currenty = my_data->currenty +1;
-            return;
-        }
-        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty)][(my_data->currentx-1)]) == 0){
-            //(-1,0)
-            grid[my_data->currenty][my_data->currentx] = '.';
-            grid[(my_data->currenty)][(my_data->currentx-1)] = ((char)'0' + my_data->thread_id);
-            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
-            my_data->currentx = my_data->currentx -1;
-            return;
-        }
-        if(pthread_mutex_trylock(&mapLocks[(my_data->currenty+1)][(my_data->currentx)]) == 0){
-            //(0,+1)
-            grid[my_data->currenty][my_data->currentx] = '.';
-            grid[(my_data->currenty+1)][(my_data->currentx)] = ((char)'0' + my_data->thread_id);
-            pthread_mutex_unlock (&mapLocks[my_data->currenty][my_data->currentx]);
             my_data->currenty = my_data->currenty +1;
             return;
         }
